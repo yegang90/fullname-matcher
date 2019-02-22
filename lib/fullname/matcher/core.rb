@@ -69,7 +69,7 @@ module Fullname::Matcher
       # skip validating middlename if @options[:skip_match_middle_name] == true
       # all matched result which middle name is NULL or NON-NULL will be returned
       if @options[:skip_match_middle_name] && match_list.size > 0
-        if name[:middle] && null_middle_name_allowed
+        if name[:middle] && @options[:null_middle_name_allowed]
           m_re = build_middlename_regexp(name[:middle])
           match_list_with_middlename = match_list.select do |r|
             r_middle_name = r.send(@mapping[:middle])
