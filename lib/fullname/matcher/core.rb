@@ -31,6 +31,7 @@ module Fullname::Matcher
     DEFAULT_MAPPING = {:first => 'first', :middle => 'middle', :last => 'last', :suffix => 'suffix'}
     DEFAULT_OPTIONS = {
       :skip_match_middle_name => false, # skip match middle name if middle name not provided.
+      :null_middle_name_allowed => false,
       :skip_match_suffix => false      # skip match suffix if suffix not provided or no column suffix in database.
     }
 
@@ -67,7 +68,17 @@ module Fullname::Matcher
       
       # skip validating middlename if @options[:skip_match_middle_name] == true
       # all matched result which middle name is NULL or NON-NULL will be returned
-      return match_list if @options[:skip_match_middle_name] && match_list.size > 0
+      if @options[:skip_match_middle_name] && match_list.size > 0
+        if name[:middle] && null_middle_name_allowed
+          m_re = build_middlename_regexp(name[:middle])
+          match_list_with_middlename = match_list.select do |r|
+            r_middle_name = r.send(@mapping[:middle])
+            (r_middle_name && r_middle_name =~ m_re) || r_middle_name.blank?
+          end
+        else
+          return match_list
+        end
+      end
       
       if match_list.size > 0
         # 1. exactly match
