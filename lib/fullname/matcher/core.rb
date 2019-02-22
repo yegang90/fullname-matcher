@@ -71,10 +71,11 @@ module Fullname::Matcher
       if @options[:skip_match_middle_name] && match_list.size > 0
         if name[:middle] && @options[:null_middle_name_allowed]
           m_re = build_middlename_regexp(name[:middle])
-          match_list_with_middlename = match_list.select do |r|
+          match_list_with_middlename_or_null_middlename = match_list.select do |r|
             r_middle_name = r.send(@mapping[:middle])
             (r_middle_name && r_middle_name =~ m_re) || r_middle_name.blank?
           end
+          return match_list_with_middlename_or_null_middlename
         else
           return match_list
         end
