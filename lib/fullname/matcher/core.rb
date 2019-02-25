@@ -31,7 +31,7 @@ module Fullname::Matcher
     DEFAULT_MAPPING = {:first => 'first', :middle => 'middle', :last => 'last', :suffix => 'suffix'}
     DEFAULT_OPTIONS = {
       :skip_match_middle_name => false, # skip match middle name if middle name not provided.
-      :null_middle_name_allowed => false,
+      :null_middle_name_match_allowed => false,
       :skip_match_suffix => false      # skip match suffix if suffix not provided or no column suffix in database.
     }
 
@@ -69,34 +69,20 @@ module Fullname::Matcher
       # skip validating middlename if @options[:skip_match_middle_name] == true
       # all matched result which middle name is NULL or NON-NULL will be returned
       return match_list if @options[:skip_match_middle_name] && match_list.size > 0
-      # if @options[:null_middle_name_allowed] == true
-      # when name[:middle] is present, return match middlename records and null middlename records, when name[:middle] is nil, return all records
-      if @options[:null_middle_name_allowed]
-        if name[:middle].blank?
-          return match_list
-        else
-          m_re = build_middlename_regexp(name[:middle])
-          match_list_with_middlename_or_null_middlename = match_list.select do |r|
-            r_middle_name = r.send(@mapping[:middle])
-            (r_middle_name && r_middle_name =~ m_re) || r_middle_name.blank?
-          end
-          return match_list_with_middlename_or_null_middlename
-        end
-      end
       
       if match_list.size > 0
         # 1. exactly match
         exact_match_list = match_list.select do |r|
           compare_without_dot(r.send(@mapping[:middle]), name[:middle]) && compare_without_dot(r.send(@mapping[:suffix]), name[:suffix])
         end
-        return exact_match_list if exact_match_list.size > 0
+        return exact_match_list if exact_match_list.size > 0 && @options[:null_middle_name_match_allowed] == false
         
         # 2. if name[:middle] is not NULL, regexp match
         if name[:middle]
           m_re = build_middlename_regexp(name[:middle])
           match_list_with_middlename = match_list.select do |r|
             r_middle_name = r.send(@mapping[:middle])
-            r_middle_name && r_middle_name =~ m_re
+            (r_middle_name && r_middle_name =~ m_re) || (r_middle_name.blank? && @options[:null_middle_name_match_allowed])
           end
           return match_list_with_middlename if match_list_with_middlename.size > 0
           # 2.1 fuzzy match: if middlename in DB is NULL, it matches
